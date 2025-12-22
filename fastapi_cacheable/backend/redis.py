@@ -22,11 +22,11 @@ class RedisCacheBackend(BaseCacheBackend):
         self.client = client
         self.key_prefix = key_prefix
 
-    def _builld_key(self, key: str) -> str:
+    def _build_key(self, key: str) -> str:
         return f"{self.key_prefix}:{key}"
     
     async def get(self, key: str) -> Optional[Any]:
-        redis_key = self._builld_key(key)
+        redis_key = self._build_key(key)
         raw =  await self.client.get(redis_key)
 
         if raw is None:
