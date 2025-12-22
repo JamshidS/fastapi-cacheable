@@ -1,0 +1,85 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "fastapi-cacheable"
+version = "0.1.0"
+description = "Spring-style declarative caching for FastAPI with Redis and pluggable backends."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+
+authors = [
+    { name = "Jamshid Sadiqi", email = "jamshidsadiqi25@gmail.com" }
+]
+
+keywords = [
+    "fastapi",
+    "cache",
+    "redis",
+    "caching",
+    "async",
+    "backend",
+    "decorators"
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Typing :: Typed"
+]
+
+
+dependencies = [
+    "redis>=4.5.0",
+    "typing-extensions>=4.7.0",
+]
+
+
+[project.optional-dependencies]
+msgpack = ["msgpack>=1.0.0"]
+pydantic = ["pydantic>=1.10"]
+
+
+[project.urls]
+Homepage = "https://github.com/JamshidS/fastapi-cacheable"
+Repository = "https://github.com/JamshidS/fastapi-cacheable"
+Issues = "https://github.com/JamshidS/fastapi-cacheable/issues"
+
+
+[tool.setuptools]
+packages = ["fastapi_cacheable", "fastapi_cacheable.backend"]
+
+
+[tool.setuptools.package-data]
+fastapi_cacheable = ["py.typed"]
+
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+
+[tool.black]
+line-length = 88
+target-version = ["py39"]
+
+
+[tool.ruff]
+select = ["E", "F", "W", "I"]
+line-length = 88
+
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+ignore_missing_imports = true
