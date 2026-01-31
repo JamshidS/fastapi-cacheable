@@ -22,7 +22,7 @@ class BaseCacheBackend(ABC):
         :param key: The key to look up in the cache.
         :return: The cached value, or None if not found.
         """
-        return NotImplementedError
+        raise NotImplementedError
     
     @abstractmethod
     async def set(

@@ -27,7 +27,7 @@ class RedisCacheBackend(BaseCacheBackend):
     
     async def get(self, key: str) -> Optional[Any]:
         redis_key = self._build_key(key)
-        raw =  await self.client.get(redis_key)
+        raw = await self.client.get(redis_key)
 
         if raw is None:
             return None
@@ -40,13 +40,13 @@ class RedisCacheBackend(BaseCacheBackend):
         value: Any,
         ttl: Optional[int] = 3600,
     ) -> None:
-        redis_key = self._builld_key(key)
+        redis_key = self._build_key(key)
         data = serialize(value)
 
         await self.client.set(name=redis_key, value=data, ex=ttl)
 
     async def delete(self, key: str) -> None:
-        redis_key = self._builld_key(key)
+        redis_key = self._build_key(key)
         await self.client.delete(redis_key)
 
     async def clear(self, namespace: Optional[str] = None) -> None:
