@@ -1,0 +1,7 @@
+services:
+  redis:
+    image: redis:7-alpine
+    # Uncomment to require a password:
+    # command: ["redis-server", "--requirepass", "demo-password"]
+    ports:
+      - "6379:6379"
