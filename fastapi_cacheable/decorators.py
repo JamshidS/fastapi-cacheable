@@ -164,3 +164,123 @@ def cacheable(
         return wrapper
     
     return decorator
+
+
+def cache_put(
+	*,
+	namespace: str,
+	key: Optional[str] = None,
+	ttl: int = 3600,
+	key_builder: Optional[KeyBuilder] = None,
+	condition: Optional[Callable[..., bool] | Callable[..., Awaitable[bool]]] = None,
+	unless: Optional[Callable[[Any], bool] | Callable[[Any], Awaitable[bool]]] = None,
+	excluded_params: Optional[set[str]] = None,
+) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
+    
+    def decorator(func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
+        _ensure_async(func=func)
+
+        @functools.wraps(func)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            _ensure_initialized()
+
+            result = await func(*args, **kwargs)
+
+            if condition is not None:
+                should_cache = await _call_condition(condition, *args, **kwargs)
+                if not should_cache:
+                    return result
+
+            if unless is not None:
+                skip_store = await _call_unless(unless, result)
+                if skip_store:
+                    return result
+            
+            backend = CacheConfig.get_backend()
+            cache_key = _build_cache_key(
+				func=func,
+				args=cast(tuple[Any, ...], args),
+				kwargs=cast(dict[str, Any], kwargs),
+				namespace=namespace,
+				key=key,
+				key_builder=key_builder,
+				excluded_params=excluded_params,
+			)
+
+            try:
+                await backend.set(cache_key, result, ttl=ttl)
+            except Exception:
+                logger.exception("cache_put(%s): backend.set failed", namespace)
+
+            return result
+        
+        return wrapper
+    
+    return decorator
+
+
+def cache_evict(
+	*,
+	namespace: Optional[str] = None,
+	key: Optional[str] = None,
+	all_entries: bool = False,
+	before_invocation: bool = False,
+	key_builder: Optional[KeyBuilder] = None,
+	condition: Optional[Callable[..., bool] | Callable[..., Awaitable[bool]]] = None,
+	excluded_params: Optional[set[str]] = None,
+) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
+    
+    def decorator(func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
+        _ensure_async(func=func)
+
+        async def _evict(*args: P.args, **kwargs: P.kwargs) -> None:
+            backend = CacheConfig.get_backend()
+
+            if all_entries:
+                await backend.clear(namespace=namespace)
+
+            if namespace is None:
+                raise ValueError("cache_evict requires `namespace` when all_entries=False.")
+            
+            cache_key = _build_cache_key(
+				func=func,
+				args=cast(tuple[Any, ...], args),
+				kwargs=cast(dict[str, Any], kwargs),
+				namespace=namespace,
+				key=key,
+				key_builder=key_builder,
+				excluded_params=excluded_params,
+			)
+			
+            await backend.delete(cache_key)
+        
+		
+        @functools.wraps(func)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            _ensure_initialized()
+            
+            if condition is not None:
+                should_evict = await _call_condition(condition, *args, **kwargs)
+                if not should_evict:
+                    return await func(*args, **kwargs)
+                
+                if before_invocation:
+                    try:
+                        await _evict(*args, **kwargs)
+                    except Exception:
+                        logger.exception("cache_evict: eviction failed before invocation")
+                        
+                result = await func(*args, **kwargs)
+                
+                
+                if not before_invocation:
+                    try:
+                        await _evict(*args, **kwargs)
+                    except Exception:
+                        logger.exception("cache_evict: eviction failed after invocation")
+                        
+                return result
+            
+            return wrapper
+        
+        return decorator
